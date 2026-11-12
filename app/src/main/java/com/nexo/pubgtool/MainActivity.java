@@ -1,3 +1,4 @@
+
 package com.nexo.pubgtool;
 
 import android.app.*;
@@ -8,137 +9,245 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.view.*;
+import android.webkit.*;
 import android.widget.*;
-import android.os.StatFs;
 
 public class MainActivity extends Activity {
 
-    LinearLayout main;
-    int green = Color.rgb(0, 255, 125);
-    int dark = Color.rgb(10, 14, 17);
-    int card = Color.rgb(23, 29, 34);
+    final int BG = Color.rgb(9, 13, 16);
+    final int CARD = Color.rgb(23, 30, 35);
+    final int GREEN = Color.rgb(0, 255, 125);
+    final int WHITE = Color.WHITE;
+
+    LinearLayout root;
+    WebView web;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getWindow().setStatusBarColor(dark);
-        getWindow().setNavigationBarColor(dark);
+        getWindow().setStatusBarColor(BG);
+        getWindow().setNavigationBarColor(BG);
+
+        root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(BG);
+
+        setContentView(root);
+        showHome();
+    }
+
+    GradientDrawable shape(int color, int stroke) {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(color);
+        d.setCornerRadius(25);
+        d.setStroke(2, stroke);
+        return d;
+    }
+
+    TextView text(String value, int size, int color) {
+        TextView t = new TextView(this);
+        t.setText(value);
+        t.setTextSize(size);
+        t.setTextColor(color);
+        t.setGravity(Gravity.CENTER);
+        t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        t.setPadding(12, 12, 12, 12);
+        t.setIncludeFontPadding(true);
+        return t;
+    }
+
+    void header(String title) {
+        TextView h = text(title, 25, GREEN);
+        h.setPadding(10, 24, 10, 24);
+        root.addView(h);
+    }
+
+    void addButton(String arabic, String english, Runnable action) {
+
+        LinearLayout item = new LinearLayout(this);
+        item.setOrientation(LinearLayout.VERTICAL);
+        item.setGravity(Gravity.CENTER);
+        item.setBackground(shape(CARD, GREEN));
+        item.setPadding(10, 12, 10, 12);
+
+        TextView ar = text(arabic, 19, WHITE);
+        TextView en = text(english, 13, GREEN);
+
+        item.addView(ar);
+        item.addView(en);
+
+        LinearLayout.LayoutParams p =
+            new LinearLayout.LayoutParams(
+                -1, -2
+            );
+
+        p.setMargins(0, 8, 0, 8);
+        item.setLayoutParams(p);
+
+        item.setOnClickListener(v -> action.run());
+
+        root.addView(item);
+    }
+
+    void pageStart(String title) {
+
+        root.removeAllViews();
+
+        TextView back = text("‹  رجوع | BACK", 17, GREEN);
+        back.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        back.setOnClickListener(v -> showHome());
+
+        root.addView(back);
+        header(title);
+    }
+
+    void showHome() {
+
+        root.removeAllViews();
 
         ScrollView scroll = new ScrollView(this);
-        scroll.setBackgroundColor(dark);
 
-        main = new LinearLayout(this);
-        main.setOrientation(LinearLayout.VERTICAL);
-        main.setPadding(20, 25, 20, 30);
-        main.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(20, 25, 20, 25);
+        content.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
 
-        scroll.addView(main);
-        setContentView(scroll);
+        TextView logo = text("𓆩 𝑵𝑬𝑿𝑶 𓆪", 39, GREEN);
+        content.addView(logo);
 
-        TextView title = new TextView(this);
-        title.setText("𓆩 𝑵𝑬𝑿𝑶 𓆪");
-        title.setTextColor(green);
-        title.setTextSize(32);
-        title.setTypeface(null, Typeface.BOLD);
-        title.setGravity(Gravity.CENTER);
-        main.addView(title);
+        content.addView(text(
+            "PUBG BOOSTER PRO",
+            20, WHITE
+        ));
 
-        TextView sub = new TextView(this);
-        sub.setText("PUBG BOOSTER PRO");
-        sub.setTextColor(Color.WHITE);
-        sub.setTextSize(19);
-        sub.setGravity(Gravity.CENTER);
-        sub.setPadding(0, 5, 0, 20);
-        main.addView(sub);
+        content.addView(text(
+            "مرحباً بك في عالم NEXO",
+            19, WHITE
+        ));
 
-        addLine();
-        addInfo("مرحباً بك في NEXO PUBG TOOL");
-        addInfo("أدوات مساعدة للاعبين");
+        content.addView(text(
+            "YOUR PUBG TOOL CENTER",
+            13, GREEN
+        ));
 
-        addButton("🎮  تشغيل PUBG GLOBAL", () -> openGame("com.tencent.ig"));
+        addTo(content, "قسم الألعاب", "GAMES",
+            () -> showGames());
 
-        addButton("🌍  نسخ PUBG الأخرى", () -> showVersions());
+        addTo(content, "أدوات الجهاز", "DEVICE TOOLS",
+            () -> showTools());
 
-        addButton("🧹  فحص مساحة الجهاز", () -> checkStorage());
+        addTo(content, "أخبار ببجي", "PUBG NEWS",
+            () -> showNews());
 
-        addButton("🌡️  فحص حرارة البطارية", () -> checkTemperature());
+        addTo(content, "روابطنا الرسمية", "OUR LINKS",
+            () -> showLinks());
 
-        addButton("⚙️  تنظيف الملفات المؤقتة", () -> {
-            try {
-                Intent i = new Intent(
-                    android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS
-                );
-                startActivity(i);
-            } catch (Exception e) {
-                Toast.makeText(this,
-                    "افتح إعدادات التخزين يدوياً",
-                    Toast.LENGTH_LONG).show();
-            }
-        });
+        TextView footer = text(
+            "DEVELOPED BY NEXO",
+            14, GREEN
+        );
+        content.addView(footer);
 
-        addButton("📰  أخبار وتحديثات PUBG", () ->
-            openLink("https://www.pubgmobile.com/"));
-
-        addButton("✈️  قناة التليجرام", () ->
-            openLink("https://t.me/az_4oi"));
-
-        addButton("🎵  حساب TikTok", () ->
-            openLink("https://www.tiktok.com/@wdd4k"));
-
-        addLine();
-
-        TextView footer = new TextView(this);
-        footer.setText("DEVELOPED BY 𓆩 𝑵𝑬𝑿𝑶 𓆪");
-        footer.setTextColor(green);
-        footer.setTextSize(14);
-        footer.setGravity(Gravity.CENTER);
-        footer.setPadding(0, 20, 0, 10);
-        main.addView(footer);
+        scroll.addView(content);
+        root.addView(scroll);
     }
 
-    void addInfo(String text) {
-        TextView t = new TextView(this);
-        t.setText(text);
-        t.setTextColor(Color.WHITE);
-        t.setTextSize(17);
-        t.setGravity(Gravity.CENTER);
-        t.setPadding(5, 12, 5, 12);
-        main.addView(t);
-    }
+    void addTo(LinearLayout parent,
+               String ar, String en, Runnable action) {
 
-    void addLine() {
-        View line = new View(this);
-        line.setBackgroundColor(green);
-        LinearLayout.LayoutParams p =
-            new LinearLayout.LayoutParams(-1, 2);
-        p.setMargins(5, 15, 5, 15);
-        main.addView(line, p);
-    }
+        LinearLayout item = new LinearLayout(this);
+        item.setOrientation(LinearLayout.VERTICAL);
+        item.setGravity(Gravity.CENTER);
+        item.setBackground(shape(CARD, GREEN));
+        item.setPadding(10, 12, 10, 12);
 
-    void addButton(String text, Runnable action) {
-        Button b = new Button(this);
-        b.setText(text);
-        b.setTextColor(Color.WHITE);
-        b.setTextSize(16);
-        b.setAllCaps(false);
-        b.setTypeface(null, Typeface.BOLD);
-
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(card);
-        bg.setCornerRadius(24);
-        bg.setStroke(2, green);
-        b.setBackground(bg);
+        item.addView(text(ar, 19, WHITE));
+        item.addView(text(en, 13, GREEN));
 
         LinearLayout.LayoutParams p =
-            new LinearLayout.LayoutParams(-1, 65);
+            new LinearLayout.LayoutParams(-1, -2);
+
         p.setMargins(0, 9, 0, 9);
+        parent.addView(item, p);
 
-        main.addView(b, p);
-        b.setOnClickListener(v -> action.run());
+        item.setOnClickListener(v -> action.run());
+    }
+
+    void showGames() {
+
+        pageStart("الألعاب | GAMES");
+
+        addButton("النسخة العالمية", "PUBG GLOBAL",
+            () -> openGame("com.tencent.ig"));
+
+        addButton("النسخة الكورية", "PUBG KOREA",
+            () -> openGame("com.pubg.krmobile"));
+
+        addButton("النسخة الفيتنامية", "PUBG VIETNAM",
+            () -> openGame("com.vng.pubgmobile"));
+
+        addButton("النسخة التايوانية", "PUBG TAIWAN",
+            () -> openGame("com.rekoo.pubgm"));
+    }
+
+    void showTools() {
+
+        pageStart("أدوات الجهاز | DEVICE TOOLS");
+
+        addButton("فحص مساحة الجهاز", "STORAGE CHECK",
+            () -> checkStorage());
+
+        addButton("حرارة البطارية", "BATTERY TEMPERATURE",
+            () -> checkTemperature());
+
+        addButton("إعدادات التخزين", "STORAGE SETTINGS",
+            () -> openSettings());
+    }
+
+    void showLinks() {
+
+        pageStart("روابطنا | OUR LINKS");
+
+        addButton("قناة التليجرام", "TELEGRAM CHANNEL",
+            () -> openLink("https://t.me/az_4oi"));
+
+        addButton("الموقع الرسمي", "PUBG MOBILE WEBSITE",
+            () -> openLink("https://www.pubgmobile.com/"));
+    }
+
+    void showNews() {
+
+        pageStart("أخبار ببجي | PUBG NEWS");
+
+        TextView note = text(
+            "آخر الأخبار والتحديثات الرسمية\nLATEST OFFICIAL UPDATES",
+            16, WHITE
+        );
+
+        root.addView(note);
+
+        web = new WebView(this);
+
+        web.setBackgroundColor(BG);
+
+        WebSettings settings = web.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+
+        web.setWebViewClient(new WebViewClient());
+
+        root.addView(web, new LinearLayout.LayoutParams(
+            -1, 0, 1
+        ));
+
+        web.loadUrl(
+            "https://www.pubgmobile.com/en-US/news.shtml"
+        );
     }
 
     void openGame(String packageName) {
+
         try {
             Intent i = getPackageManager()
                 .getLaunchIntentForPackage(packageName);
@@ -147,9 +256,10 @@ public class MainActivity extends Activity {
                 startActivity(i);
             } else {
                 Toast.makeText(this,
-                    "اللعبة غير مثبتة على جهازك",
+                    "اللعبة غير مثبتة | GAME NOT INSTALLED",
                     Toast.LENGTH_LONG).show();
             }
+
         } catch (Exception e) {
             Toast.makeText(this,
                 "تعذر تشغيل اللعبة",
@@ -157,57 +267,36 @@ public class MainActivity extends Activity {
         }
     }
 
-    void showVersions() {
-        String[] names = {
-            "PUBG Global",
-            "PUBG KR",
-            "PUBG Vietnam",
-            "PUBG Taiwan"
-        };
-
-        String[] packages = {
-            "com.tencent.ig",
-            "com.pubg.krmobile",
-            "com.vng.pubgmobile",
-            "com.rekoo.pubgm"
-        };
-
-        new AlertDialog.Builder(this)
-            .setTitle("اختر نسخة PUBG")
-            .setItems(names, (dialog, which) ->
-                openGame(packages[which]))
-            .setNegativeButton("إلغاء", null)
-            .show();
-    }
-
     void checkStorage() {
+
         try {
-            StatFs stat = new StatFs(
+            android.os.StatFs s = new android.os.StatFs(
                 Environment.getDataDirectory().getPath()
             );
 
-            long total = stat.getTotalBytes() / (1024 * 1024);
-            long free = stat.getAvailableBytes() / (1024 * 1024);
+            long total = s.getTotalBytes() / 1048576;
+            long free = s.getAvailableBytes() / 1048576;
             long used = total - free;
 
             new AlertDialog.Builder(this)
-                .setTitle("مساحة الجهاز")
+                .setTitle("مساحة الجهاز | STORAGE")
                 .setMessage(
-                    "المساحة الكلية: " + total + " MB\n\n" +
-                    "المساحة المستخدمة: " + used + " MB\n\n" +
-                    "المساحة المتوفرة: " + free + " MB"
+                    "Total: " + total + " MB\n\n" +
+                    "Used: " + used + " MB\n\n" +
+                    "Free: " + free + " MB"
                 )
-                .setPositiveButton("حسناً", null)
+                .setPositiveButton("OK", null)
                 .show();
 
         } catch (Exception e) {
             Toast.makeText(this,
-                "تعذر قراءة المساحة",
+                "حدث خطأ",
                 Toast.LENGTH_SHORT).show();
         }
     }
 
     void checkTemperature() {
+
         try {
             Intent battery = registerReceiver(
                 null,
@@ -215,20 +304,38 @@ public class MainActivity extends Activity {
             );
 
             if (battery != null) {
+
                 int temp = battery.getIntExtra(
-                    android.os.BatteryManager.EXTRA_TEMPERATURE, 0
+                    android.os.BatteryManager.EXTRA_TEMPERATURE,
+                    0
                 );
 
                 new AlertDialog.Builder(this)
-                    .setTitle("حرارة البطارية")
-                    .setMessage("درجة الحرارة: " + (temp / 10.0) + " °C")
-                    .setPositiveButton("حسناً", null)
+                    .setTitle("Battery Temperature")
+                    .setMessage(
+                        "حرارة البطارية: " +
+                        (temp / 10.0) + " °C"
+                    )
+                    .setPositiveButton("OK", null)
                     .show();
             }
 
         } catch (Exception e) {
             Toast.makeText(this,
-                "تعذر قراءة درجة الحرارة",
+                "تعذر قراءة الحرارة",
+                Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    void openSettings() {
+
+        try {
+            startActivity(new Intent(
+                android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS
+            ));
+        } catch (Exception e) {
+            Toast.makeText(this,
+                "افتح إعدادات التخزين يدوياً",
                 Toast.LENGTH_SHORT).show();
         }
     }
@@ -243,6 +350,16 @@ public class MainActivity extends Activity {
             Toast.makeText(this,
                 "تعذر فتح الرابط",
                 Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+
+        if (web != null && web.canGoBack()) {
+            web.goBack();
+        } else {
+            showHome();
         }
     }
 }
